@@ -16,38 +16,99 @@ document.addEventListener('DOMContentLoaded', () => {
     // Administrator credentials
     const admin = { username: 'admin', password: 'raport' };
 
-         // Funkcja do pobierania pracowników z bazy danych
-        function fetchEmployees() {
-            fetch('https://wyry.vercel.app/api/data') // Upewnij się, że tu wpisujesz odpowiedni URL
+     document.addEventListener('DOMContentLoaded', () => {
+    const employeeForm = document.getElementById('employeeForm');
+    const employeeList = document.getElementById('employeeList');
+
+    // Funkcja do pobierania pracowników z MongoDB
+    function fetchEmployees() {
+        fetch('https://wyry.vercel.app/api/employees') // Upewnij się, że tu wpisujesz odpowiedni URL
+            .then(response => response.json())
+            .then(data => {
+                renderEmployees(data); // Renderuj pracowników
+            })
+            .catch(error => console.error('Błąd podczas pobierania pracowników:', error));
+    }
+
+    // Funkcja do renderowania pracowników na stronie
+    function renderEmployees(employees) {
+        employeeList.innerHTML = ''; // Czyść listę
+        employees.forEach((employee, index) => {
+            const li = document.createElement('li');
+            li.textContent = `${employee.name} - Zatrudniony: ${employee.date}`;
+            const editBtn = document.createElement('button');
+            editBtn.textContent = 'Edytuj';
+            editBtn.addEventListener('click', () => editEmployee(employee._id)); // Użyj ID do edytowania
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'Usuń';
+            deleteBtn.addEventListener('click', () => deleteEmployee(employee._id)); // Użyj ID do usuwania
+            li.appendChild(editBtn);
+            li.appendChild(deleteBtn);
+            employeeList.appendChild(li);
+        });
+    }
+
+    // Funkcja do dodawania pracownika
+    employeeForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = document.getElementById('employeeName').value;
+        const date = document.getElementById('hireDate').value;
+
+        // Wyślij dane do MongoDB
+        fetch('https://wyry.vercel.app/api/employees', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name, date }),
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Pracownik dodany:', data);
+                employeeForm.reset(); // Resetuj formularz
+                fetchEmployees(); // Odśwież listę pracowników
+            })
+            .catch(error => console.error('Błąd podczas dodawania pracownika:', error));
+    });
+
+    // Funkcja do edytowania pracownika
+    function editEmployee(id) {
+        const newName = prompt('Edytuj imię i nazwisko:');
+        const newDate = prompt('Edytuj datę zatrudnienia:');
+        if (newName && newDate) {
+            // Wysyłanie żądania PUT do edycji pracownika
+            fetch(`https://wyry.vercel.app/api/employees/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name: newName, date: newDate }),
+            })
                 .then(response => response.json())
                 .then(data => {
-                    const display = document.getElementById('dataDisplay');
-                    display.innerHTML = ''; // Czyść poprzednie wyniki
-                    data.forEach(item => {
-                        display.innerHTML += `<p>${item.value}</p>`; // Wyświetl dane pracowników
-                    });
+                    console.log('Pracownik zaktualizowany:', data);
+                    fetchEmployees(); // Odśwież listę
                 })
-                .catch(error => console.error('Błąd podczas pobierania danych:', error));
+                .catch(error => console.error('Błąd podczas edytowania pracownika:', error));
         }
+    }
 
-        // Wysyłanie danych do serwera
-        document.getElementById('sendButton').addEventListener('click', () => {
-            const value = document.getElementById('inputValue').value;
+    // Funkcja do usuwania pracownika
+    function deleteEmployee(id) {
+        // Wysyłanie żądania DELETE do usunięcia pracownika
+        fetch(`https://wyry.vercel.app/api/employees/${id}`, {
+            method: 'DELETE',
+        })
+            .then(() => {
+                console.log('Pracownik usunięty');
+                fetchEmployees(); // Odśwież listę
+            })
+            .catch(error => console.error('Błąd podczas usuwania pracownika:', error));
+    }
 
-            fetch('https://wyry.vercel.app/api/data', { // Upewnij się, że tu wpisujesz odpowiedni URL
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ value })
-            })
-            .then(response => response.text())
-            .then(data => {
-                console.log('Dane wysłane na serwer:', data);
-                fetchEmployees(); // Odśwież listę pracowników po dodaniu
-            })
-            .catch(error => console.error('Błąd podczas wysyłania danych:', error));
-        });
+    // Wywołaj funkcję do pobierania pracowników po załadowaniu strony
+    fetchEmployees();
+});
 
     const renderEmployees = (nameFilter = '', dateFilter = '') => {
         employeeList.innerHTML = '';
