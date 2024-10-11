@@ -16,8 +16,41 @@ document.addEventListener('DOMContentLoaded', () => {
     // Administrator credentials
     const admin = { username: 'admin', password: 'raport' };
 
-    // Load employees from local storage
-    const employees = JSON.parse(localStorage.getItem('employees')) || [];
+         // Funkcja do pobierania pracowników z bazy danych
+        function fetchEmployees() {
+            fetch('https://your-vercel-url/api/data') // Upewnij się, że tu wpisujesz odpowiedni URL
+                .then(response => response.json())
+                .then(data => {
+                    const display = document.getElementById('dataDisplay');
+                    display.innerHTML = ''; // Czyść poprzednie wyniki
+                    data.forEach(item => {
+                        display.innerHTML += `<p>${item.value}</p>`; // Wyświetl dane pracowników
+                    });
+                })
+                .catch(error => console.error('Błąd podczas pobierania danych:', error));
+        }
+
+        // Wysyłanie danych do serwera
+        document.getElementById('sendButton').addEventListener('click', () => {
+            const value = document.getElementById('inputValue').value;
+
+            fetch('https://your-vercel-url/api/data', { // Upewnij się, że tu wpisujesz odpowiedni URL
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ value })
+            })
+            .then(response => response.text())
+            .then(data => {
+                console.log('Dane wysłane na serwer:', data);
+                fetchEmployees(); // Odśwież listę pracowników po dodaniu
+            })
+            .catch(error => console.error('Błąd podczas wysyłania danych:', error));
+        });
+
+        // Funkcja wywoływana przy kliknięciu przycisku "Pobierz pracowników"
+        document.getElementById('getDataButton').addEventListener('click', fetchEmployees);
 
     const renderEmployees = (nameFilter = '', dateFilter = '') => {
         employeeList.innerHTML = '';
