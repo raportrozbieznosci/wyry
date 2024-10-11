@@ -15,39 +15,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Administrator credentials
     const admin = { username: 'admin', password: 'raport' };
+    let employees = []; // Zmienna do przechowywania pracowników
 
-         // Funkcja do pobierania pracowników z bazy danych
-        function fetchEmployees() {
-            fetch('https://wyry.vercel.app/api/data') // Upewnij się, że tu wpisujesz odpowiedni URL
-                .then(response => response.json())
-                .then(data => {
-                    const display = document.getElementById('dataDisplay');
-                    display.innerHTML = ''; // Czyść poprzednie wyniki
-                    data.forEach(item => {
-                        display.innerHTML += `<p>${item.value}</p>`; // Wyświetl dane pracowników
-                    });
-                })
-                .catch(error => console.error('Błąd podczas pobierania danych:', error));
-        }
-
-        // Wysyłanie danych do serwera
-        document.getElementById('sendButton').addEventListener('click', () => {
-            const value = document.getElementById('inputValue').value;
-
-            fetch('https://wyry.vercel.app/api/data', { // Upewnij się, że tu wpisujesz odpowiedni URL
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ value })
-            })
-            .then(response => response.text())
+    // Funkcja do pobierania pracowników z bazy danych
+    function fetchEmployees() {
+        fetch('https://wyry.vercel.app/api/data') // Upewnij się, że tu wpisujesz odpowiedni URL
+            .then(response => response.json())
             .then(data => {
-                console.log('Dane wysłane na serwer:', data);
-                fetchEmployees(); // Odśwież listę pracowników po dodaniu
+                employees = data; // Zaktualizuj listę pracowników z bazy
+                renderEmployees(filterName.value, filterDate.value);
             })
-            .catch(error => console.error('Błąd podczas wysyłania danych:', error));
-        });
+            .catch(error => console.error('Błąd podczas pobierania danych:', error));
+    }
+
+    // Wysyłanie danych do serwera
+    document.getElementById('sendButton').addEventListener('click', () => {
+        const value = document.getElementById('inputValue').value;
+
+        fetch('https://wyry.vercel.app/api/data', { // Upewnij się, że tu wpisujesz odpowiedni URL
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ value })
+        })
+        .then(response => response.text())
+        .then(data => {
+            console.log('Dane wysłane na serwer:', data);
+            fetchEmployees(); // Odśwież listę pracowników po dodaniu
+        })
+        .catch(error => console.error('Błąd podczas wysyłania danych:', error));
+    });
 
     const renderEmployees = (nameFilter = '', dateFilter = '') => {
         employeeList.innerHTML = '';
@@ -59,6 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .forEach((employee, index) => {
                 const li = document.createElement('li');
                 li.textContent = `${employee.name} - ${employee.date}`;
+                
                 const editBtn = document.createElement('button');
                 editBtn.textContent = 'Edytuj';
                 editBtn.classList.add('edit-btn');
@@ -66,19 +65,39 @@ document.addEventListener('DOMContentLoaded', () => {
                     const newName = prompt('Edytuj imię i nazwisko:', employee.name);
                     const newDate = prompt('Edytuj datę zatrudnienia:', employee.date);
                     if (newName && newDate) {
-                        employees[index] = { name: newName, date: newDate };
-                        localStorage.setItem('employees', JSON.stringify(employees));
-                        renderEmployees(nameFilter, dateFilter);
+                        // Aktualizacja pracownika w bazie danych
+                        fetch(`https://wyry.vercel.app/api/data/${employee._id}`, { // Przykład URL z ID
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ name: newName, date: newDate })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log('Zaktualizowany pracownik:', data);
+                            fetchEmployees(); // Odśwież listę pracowników
+                        })
+                        .catch(error => console.error('Błąd podczas aktualizacji:', error));
                     }
                 });
+
                 const deleteBtn = document.createElement('button');
                 deleteBtn.textContent = 'Usuń';
                 deleteBtn.classList.add('delete-btn');
                 deleteBtn.addEventListener('click', () => {
-                    employees.splice(index, 1);
-                    localStorage.setItem('employees', JSON.stringify(employees));
-                    renderEmployees(nameFilter, dateFilter);
+                    // Usunięcie pracownika z bazy danych
+                    fetch(`https://wyry.vercel.app/api/data/${employee._id}`, { // Przykład URL z ID
+                        method: 'DELETE'
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Usunięty pracownik:', data);
+                        fetchEmployees(); // Odśwież listę pracowników
+                    })
+                    .catch(error => console.error('Błąd podczas usuwania:', error));
                 });
+
                 li.appendChild(editBtn);
                 li.appendChild(deleteBtn);
                 employeeList.appendChild(li);
@@ -102,6 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('loggedIn', 'true');
             loginForm.style.display = 'none';
             app.style.display = 'block';
+            fetchEmployees(); // Ładowanie pracowników po zalogowaniu
         } else {
             alert('Nieprawidłowa nazwa użytkownika lub hasło');
         }
@@ -117,10 +137,20 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const name = document.getElementById('employeeName').value;
         const date = document.getElementById('hireDate').value;
-        employees.push({ name, date });
-        localStorage.setItem('employees', JSON.stringify(employees));
-        renderEmployees(filterName.value, filterDate.value);
-        document.getElementById('employeeName').value = 'KAT'; // Reset to "KAT"
+        fetch('https://wyry.vercel.app/api/data', { // Upewnij się, że tu wpisujesz odpowiedni URL
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ name, date })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Dodany pracownik:', data);
+            fetchEmployees(); // Odśwież listę pracowników po dodaniu
+            document.getElementById('employeeName').value = ''; // Reset input
+        })
+        .catch(error => console.error('Błąd podczas dodawania pracownika:', error));
     });
 
     bulkAddButton.addEventListener('click', () => {
@@ -129,12 +159,20 @@ document.addEventListener('DOMContentLoaded', () => {
         bulkData.forEach(line => {
             const name = line.trim();
             if (name && date) {
-                employees.push({ name, date });
+                fetch('https://wyry.vercel.app/api/data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, date })
+                })
+                .then(response => response.json())
+                .then(data => console.log('Dodano pracownika w partii:', data))
+                .catch(error => console.error('Błąd podczas dodawania pracownika w partii:', error));
             }
         });
-        localStorage.setItem('employees', JSON.stringify(employees));
-        renderEmployees(filterName.value, filterDate.value);
-        employeeBulk.value = ''; // Clear the textarea
+        fetchEmployees(); // Odśwież listę pracowników
+        employeeBulk.value = ''; // Wyczyść pole tekstowe
     });
 
     filterName.addEventListener('input', () => {
@@ -157,7 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     importButton.addEventListener('click', () => {
-        const file = importFile.files;
+        const file = importFile.files[0]; // Poprawka: tylko pierwszy plik
         if (file) {
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -166,14 +204,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const [name, date] = line.split(',').map(item => item.trim());
                     return { name, date };
                 });
-                employees.push(...importedEmployees);
-                localStorage.setItem('employees', JSON.stringify(employees));
-                renderEmployees(filterName.value, filterDate.value);
-            };
-            reader.readAsText(file);
-        }
-    });
-
-    checkLoginStatus();
-    renderEmployees();
-});
+                Promise.all(importedEmployees.map(employee => {
+                    return fetch('https://wyry.vercel.app/api/data', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application
