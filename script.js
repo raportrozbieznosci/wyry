@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
          // Funkcja do pobierania pracowników z bazy danych
         function fetchEmployees() {
-            fetch('https://your-vercel-url/api/data') // Upewnij się, że tu wpisujesz odpowiedni URL
+            fetch('https://wyry.vercel.app/api/data') // Upewnij się, że tu wpisujesz odpowiedni URL
                 .then(response => response.json())
                 .then(data => {
                     const display = document.getElementById('dataDisplay');
@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('sendButton').addEventListener('click', () => {
             const value = document.getElementById('inputValue').value;
 
-            fetch('https://your-vercel-url/api/data', { // Upewnij się, że tu wpisujesz odpowiedni URL
+            fetch('https://wyry.vercel.app/api/data', { // Upewnij się, że tu wpisujesz odpowiedni URL
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
