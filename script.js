@@ -49,9 +49,6 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(error => console.error('Błąd podczas wysyłania danych:', error));
         });
 
-        // Funkcja wywoływana przy kliknięciu przycisku "Pobierz pracowników"
-        document.getElementById('getDataButton').addEventListener('click', fetchEmployees);
-
     const renderEmployees = (nameFilter = '', dateFilter = '') => {
         employeeList.innerHTML = '';
         // Sort employees by date
